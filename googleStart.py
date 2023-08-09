@@ -10,54 +10,82 @@ from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
 # If modifying these scopes, delete the file token.json.
-SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+CALENDAR_ID = 'f95e820ab847b075a0de756728414485a9fe28eb06d2b1dc22135fc9a78a6769@group.calendar.google.com'
 
+class Tabs2Calendar():
+    def __init__(self):
+        self.creds = None
+        self.service = None
+        # The file token.json stores the user's access and refresh tokens, and is
+        # created automatically when the authorization flow completes for the first
+        # time.
+        if os.path.exists('token.json'):
+            self.creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+        # If there are no (valid) credentials available, let the user log in.
+        if not self.creds or not self.creds.valid:
+            if self.creds and self.creds.expired and self.creds.refresh_token:
+                self.creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
+                self.creds = flow.run_local_server(port=0)
+            # Save the credentials for the next run
+            with open('token.json', 'w') as token:
+                token.write(self.creds.to_json())
 
-def main():
-    """Shows basic usage of the Google Calendar API.
-    Prints the start and name of the next 10 events on the user's calendar.
-    """
-    creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
+        try:
+            self.service = build('calendar', 'v3', credentials=self.creds)
+        except HttpError as error:
+            self.service = None
+            print('An error occurred: %s' % error)
+
+    def printEvents(self):
+        if self.service:
+            # Call the Calendar API
+            currentTime = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+            print('Getting the upcoming 10 events')
+            events_result = self.service.events().list(calendarId=CALENDAR_ID,
+                                                  timeMin=currentTime,
+                                                  maxResults=10, singleEvents=True,
+                                                  orderBy='startTime').execute()
+            events = events_result.get('items', [])
+
+            if not events:
+                print('No upcoming events found.')
+                return
+
+            # Prints the start and name of the next 10 events
+            for event in events:
+                start = event['start'].get('dateTime', event['start'].get('date'))
+                print(start, event['summary'])
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
-        # Save the credentials for the next run
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+            print("Authentication Error")
 
-    try:
-        service = build('calendar', 'v3', credentials=creds)
 
-        # Call the Calendar API
-        now = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-        print('Getting the upcoming 10 events')
-        events_result = service.events().list(calendarId='primary', timeMin=now,
-                                              maxResults=10, singleEvents=True,
-                                              orderBy='startTime').execute()
-        events = events_result.get('items', [])
+    def createEvent(self):
+        if self.service:
+            event = {
+                'summary': 'Test createEvent method',
+                'location': '510 East Peltason Drive',
+                'description': 'Confirming that method adds in event',
+                'start': {
+                    'dateTime': '2023-08-09T09:00:00',
+                    'timeZone': 'America/Los_Angeles',
+                },
+                'end': {
 
-        if not events:
-            print('No upcoming events found.')
-            return
+                    'dateTime': '2023-08-09T17:00:00',
+                    'timeZone': 'America/Los_Angeles',
+                },
+            }
+            event = self.service.events().insert(calendarId=CALENDAR_ID, body=event).execute()
+            print("Event Added!")
 
-        # Prints the start and name of the next 10 events
-        for event in events:
-            start = event['start'].get('dateTime', event['start'].get('date'))
-            print(start, event['summary'])
-
-    except HttpError as error:
-        print('An error occurred: %s' % error)
-
+        else:
+            print("Authentication Error")
 
 if __name__ == '__main__':
-    main()
+    test = Tabs2Calendar()
+    test.printEvents()
+    test.createEvent()
