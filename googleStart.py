@@ -63,19 +63,18 @@ class Tabs2Calendar():
             print("Authentication Error")
 
 
-    def createEvent(self):
+    def createEvent(self, websiteName, startTime, endTime):
         if self.service:
             event = {
-                'summary': 'Test createEvent method',
-                'location': '510 East Peltason Drive',
-                'description': 'Confirming that method adds in event',
+                'summary': 'Replace with websiteName',
+                # 'location': '510 East Peltason Drive',
+                'description': 'Can maybe put specific website url',
                 'start': {
-                    'dateTime': '2023-08-09T09:00:00',
+                    'dateTime': '2023-08-09T09:00:00', # replace with startTime
                     'timeZone': 'America/Los_Angeles',
                 },
                 'end': {
-
-                    'dateTime': '2023-08-09T17:00:00',
+                    'dateTime': '2023-08-09T17:00:00', # replace with endTime
                     'timeZone': 'America/Los_Angeles',
                 },
             }

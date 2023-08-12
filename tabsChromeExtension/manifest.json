@@ -1,0 +1,11 @@
+{
+  "manifest_version" : 3,
+  "name": "tabs2Calendar",
+  "version": "1.0.1",
+  "description": "Tracks user's web traffic and records how long a user is on one tab",
+  "author": "Jayson Nguyen",
+  "action":
+  {
+    "default_popup": "openingPage.html"
+  }
+}
