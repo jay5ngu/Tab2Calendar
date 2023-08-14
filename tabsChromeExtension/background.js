@@ -1,32 +1,22 @@
-console.log("This is a popup!")
+// each tab has their own console log that tracks the lifespan of each individual tab (similar to threads)
+console.log("Background code running...")
+var previousUrl = null;
 
-//chrome.tabs.onActivated.addListener(function (activeInfo)
-//{
-//    chrome.tabs.get(activeInfo.tabId, function (tab)
-//    {
-//        tabUrl = tab.url;
-//        var request = new XMLHttpRequest();
-//        request.onreadystatechange = function ()
-//        {
-//            if (this.readyState == 4 && this.status == 200)
-//            {
-//                console.log(this.responseText);
-//            }
-//        };
-//        request.open("POST", "http://127.0.0.1:3000/tabUrl");
-//        request.send("url=" + tabUrl)
-//    });
-//});
-//
-//chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
-//    if (tab.active && change.url) {
-//        var request = new XMLHttpRequest();
-//        request.onreadystatechange = function () {
-//            if (this.readyState == 4 && this.status == 200) {
-//                console.log(responseText);
-//            }
-//        };
-//        request.open("POST", "http://127.0.0.1:3000/tabUrl");
-//        request.send("url=" + change.url);
-//    }
-//});
+// for when you go to new tab different from current tab
+chrome.tabs.onActivated.addListener(function (activeInfo)
+{
+    chrome.tabs.query({active: true, lastFocusedWindow: true}, tabs => {
+        let url = tabs[0].url;
+        var newUrl = new URL(url);
+        console.log("Printing from onActivated(): " + newUrl.hostname);
+    });
+});
+
+// for when you go to new url from current tab
+chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
+    if (tab.status == "complete" && tab.url != 'chrome://newtab/')
+    {
+        var newUrl = new URL(tab.url);
+        console.log("Printing from onUpdated() " + newUrl.hostname);
+    }
+});

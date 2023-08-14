@@ -4,8 +4,14 @@
   "version": "1.0.1",
   "description": "Tracks user's web traffic and records how long a user is on one tab",
   "author": "Jayson Nguyen",
+  "permissions": ["tabs", "activeTab"],
   "action":
   {
-    "default_popup": "openingPage.html"
+    "default_popup": "openingPage.html",
+    "default_icon": "icon.png"
+  },
+  "background":
+  {
+    "service_worker": "background.js"
   }
 }

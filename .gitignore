@@ -1,6 +1,7 @@
 # my specific files
 credentials.json
 token.json
+googleCalendar.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
