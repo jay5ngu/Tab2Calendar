@@ -20,10 +20,19 @@ class Tabs2Calendar():
         self.CALENDAR_ID = None
 
         # get google calendar id/url
-        file = open(googleCalendar)
-        tempJson = json.load(file)
-        self.CALENDAR_ID = tempJson["CALENDAR_ID"]
-        file.close()
+        if googleCalendar.lower().endswith('.json'):
+            try:
+                file = open(googleCalendar)
+                tempJson = json.load(file)
+                self.CALENDAR_ID = tempJson["CALENDAR_ID"]
+            except KeyError:
+                print("File does not contain valid key.")
+                print("Please provide json file with key 'CALENDAR_ID'")
+            finally:
+                file.close()
+        else:
+            print("Incorrect file type.")
+            print("Please provide json file with key 'CALENDAR_ID'")
 
         # token.json file stores the user's access and refresh tokens
         # created automatically when the authorization flow completes for the first time
