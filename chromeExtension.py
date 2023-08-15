@@ -1,17 +1,22 @@
 from flask import Flask, jsonify, request
-# import time
+from googleStart import Tabs2Calendar
+import time
 
 app = Flask(__name__)
-# tabStartTime = {}
-# tabEndTime = {}
+tabStartTime = None
+tabEndTime = None
 prev_url = ""
+
+test = Tabs2Calendar("googleCalendar.json")
 
 @app.route('/tabUrl', methods=['POST'])
 def tabUrl():
     resp_json = request.get_data()
     params = resp_json.decode()
-    url = params.replace("url=", "")
-    print(url)
+    print("Printing Params")
+    print(params)
+    # url = params.replace("url=", "")
+    # print(url)
 
     return jsonify({'message' : 'test finished!'}), 200
 
