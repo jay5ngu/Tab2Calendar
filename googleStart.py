@@ -3,6 +3,8 @@ from __future__ import print_function
 import datetime
 import os.path
 import json
+import asyncio
+import websockets
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
@@ -100,7 +102,17 @@ class Tabs2Calendar():
         else:
             print("Authentication Error")
 
+async def messageHandler(websocket):
+    while True:
+        message = await websocket.recv()
+        print(message)
+
+async def webServer():
+    async with websockets.serve(messageHandler, "localhost", 3000):
+        await asyncio.Future()  # run forever
+
 if __name__ == '__main__':
     test = Tabs2Calendar("googleCalendar.json")
-    test.printEvents()
-    test.createEvent()
+    asyncio.run(webServer())
+    # test.printEvents()
+    # test.createEvent()

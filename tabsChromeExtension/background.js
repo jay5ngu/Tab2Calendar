@@ -1,6 +1,6 @@
 // each tab has their own console log that tracks the lifespan of each individual tab (similar to threads)
 console.log("Background code running...")
-//const xhttp = new XMLHttpRequest();
+const socket = new WebSocket("ws://localhost:3000");
 var previousUrl = null;
 
 // for when you go to new tab different from current tab
@@ -23,9 +23,8 @@ chrome.tabs.onActivated.addListener(function (activeInfo)
                 previousUrl = newUrl;
                 console.log("URL changed to " + previousUrl);
             }
-//            xhttp.open("POST", "http://localhost:3000/tabUrl");
-//            xhttp.send("url=" + previousUrl);
-//            console.log("URL sent from onActivated()");
+            socket.send(JSON.stringify(previousUrl));
+            console.log("URL sent from onActivated()");
         }
     });
 });
@@ -47,8 +46,7 @@ chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
             previousUrl = newUrl;
             console.log("URL changed to " + previousUrl);
         }
-//        xhttp.open("POST", "http://localhost:3000/tabUrl");
-//        xhttp.send(previousUrl);
-//        console.log("URL sent from onUpdated()");
+        socket.send(JSON.stringify(previousUrl));
+        console.log("URL sent from onUpdate()");
     }
 });

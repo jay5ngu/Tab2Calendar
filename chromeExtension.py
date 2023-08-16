@@ -11,10 +11,10 @@ test = Tabs2Calendar("googleCalendar.json")
 
 @app.route('/tabUrl', methods=['POST'])
 def tabUrl():
-    resp_json = request.get_data()
-    params = resp_json.decode()
-    print("Printing Params")
-    print(params)
+    # resp_json = request.get_data()
+    # params = resp_json.decode()
+    # print("Printing Params")
+    # print(params)
     # url = params.replace("url=", "")
     # print(url)
 
