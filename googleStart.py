@@ -70,6 +70,7 @@ class Tabs2Calendar():
 
     def createEvent(self, endTime):
         timeDifference = endTime - self.startTime
+        print(timeDifference)
         if timeDifference >= timedelta(seconds=0, minutes=5):
             # confirms google api is connected
             # if self.service:
@@ -94,13 +95,13 @@ class Tabs2Calendar():
             #     print("Authentication Error")
 
 
-    def recordUrlHistory(self, message, endTime):
+    def recordUrlHistory(self, endTime):
         timeDifference = endTime - self.startTime
-        if message["url"] not in self.urlHistory:
-            self.urlHistory[message["url"]] = timeDifference
+        if self.currentUrl not in self.urlHistory:
+            self.urlHistory[self.currentUrl] = timeDifference
         else:
-            self.urlHistory[message["url"]] += timeDifference
-        print(f"Total time for {message['url']}: {self.urlHistory[message['url']]}")
+            self.urlHistory[self.currentUrl] += timeDifference
+        print(f"Total time for {self.currentUrl}: {self.urlHistory[self.currentUrl]}")
 
 
 async def messageHandler(websocket):
@@ -109,9 +110,10 @@ async def messageHandler(websocket):
             message = await websocket.recv()
             msgParse = json.loads(message)
             recordedTime = datetime.strptime(msgParse["recordedTime"], "%m/%d/%Y, %H:%M:%S %p")
+            print(recordedTime)
             if msgParse["timeType"] == "end":
                 tabs.createEvent(recordedTime)
-                tabs.recordUrlHistory(msgParse, recordedTime)
+                tabs.recordUrlHistory(recordedTime)
 
             tabs.logCurrentUrl(msgParse)
             tabs.logStartTime(recordedTime)
@@ -127,4 +129,7 @@ async def webServer():
 
 if __name__ == '__main__':
     tabs = Tabs2Calendar("googleCalendar.json")
-    asyncio.run(webServer())
+    try:
+        asyncio.run(webServer())
+    except KeyboardInterrupt as error:
+        print("Program Ended")

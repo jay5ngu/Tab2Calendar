@@ -2,6 +2,7 @@
 const socket = new WebSocket("ws://localhost:3000");
 var currentTime = null;
 var previousUrl = null;
+var newUrl = null;
 var message = {
     "timeType": null,
     "url": null,
@@ -26,29 +27,13 @@ chrome.tabs.onActivated.addListener(function (activeInfo)
             currentTime = new Date();
             message["recordedTime"] = currentTime.toLocaleString();
 
-            var newUrl = tabs[0].url;
+            newUrl = tabs[0].url;
             newUrl = new URL(newUrl);
             newUrl = newUrl.hostname.replace("www.", "");
             message["url"] = newUrl;
             console.log("Printing from onActivated(): " + newUrl);
 
-            if (previousUrl == null)
-            {
-                message["timeType"] = "start";
-                previousUrl = newUrl;
-                console.log("Previous url now set to " + previousUrl);
-            }
-            else if (previousUrl != newUrl)
-            {
-                message["timeType"] = "end";
-                previousUrl = newUrl;
-                console.log("URL changed to " + previousUrl);
-                sendData()
-            }
-            else
-            {
-                console.log("Same URL. No data will be sent.");
-            }
+            processUrlChange();
         }
     });
 });
@@ -60,32 +45,36 @@ chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
         currentTime = new Date();
         message["recordedTime"] = currentTime.toLocaleString();
 
-        var newUrl = new URL(tab.url);
+        newUrl = new URL(tab.url);
         newUrl = newUrl.hostname.replace("www.", "");
         message["url"] = newUrl;
         console.log("Printing from onUpdated() " + newUrl);
 
-        if (previousUrl == null)
-        {
-            message["timeType"] = "start";
-            previousUrl = newUrl;
-            console.log("Previous url now set to " + previousUrl);
-        }
-        else if (previousUrl != newUrl)
-        {
-            message["timeType"] = "end";
-            previousUrl = newUrl;
-            console.log("URL changed to " + previousUrl);
-            sendData()
-        }
-        else
-        {
-            console.log("Same URL. No data will be sent.");
-        }
-
-        sendData();
+        processUrlChange();
     }
 });
+
+function processUrlChange()
+{
+    if (previousUrl == null)
+    {
+        message["timeType"] = "start";
+        previousUrl = newUrl;
+        console.log("Previous url now set to " + previousUrl);
+        sendData();
+    }
+    else if (previousUrl != newUrl)
+    {
+        message["timeType"] = "end";
+        previousUrl = newUrl;
+        console.log("URL changed to " + previousUrl);
+        sendData();
+    }
+    else
+    {
+        console.log("Same URL. No data will be sent.");
+    }
+}
 
 function sendData()
 {
