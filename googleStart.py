@@ -15,11 +15,13 @@ from googleapiclient.errors import HttpError
 # If modifying these scopes, delete the file token.json.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
 
+
 class Tabs2Calendar():
     def __init__(self, googleCalendar):
         self.creds = None # credential authorization
         self.service = None # object that manipulates google calendar API
         self.CALENDAR_ID = None # ID url of google calendar
+        self.startTime = None # start time for google calendar event
 
         # get google calendar id/url
         if googleCalendar.lower().endswith('.json'):
@@ -81,20 +83,22 @@ class Tabs2Calendar():
         else:
             print("Authentication Error")
 
+    def logStartTime(self, startTime):
+        self.startTime = startTime
 
     def createEvent(self, message):
         # confirms google api is connected
         if self.service:
             event = {
-                'summary': 'Replace with websiteName',
+                'summary': message["url"], # 'Replace with websiteName',
                 # 'location': '510 East Peltason Drive',
                 # 'description': 'Can maybe put specific website url',
                 'start': {
-                    'dateTime': '2023-08-09T09:00:00', # replace with startTime "8/16/2023, 7:00:00 PM",
+                    'dateTime': self.startTime, # '2023-08-09T09:00:00',
                     'timeZone': 'America/Los_Angeles',
                 },
                 'end': {
-                    'dateTime': '2023-08-09T17:00:00', # replace with endTime "8/16/2023, 10:00:00 PM",
+                    'dateTime': message["recordedTime"], # replace with endTime "8/16/2023, 10:00:00 PM",
                     'timeZone': 'America/Los_Angeles',
                 },
             }
@@ -104,12 +108,22 @@ class Tabs2Calendar():
         else:
             print("Authentication Error")
 
+
 async def messageHandler(websocket):
     while True:
-        message = await websocket.recv()
-        msgParse = json.loads(message)
-        dateObject = datetime.strptime(msgParse["recordedTime"], "%m/%d/%Y, %H:%M:%S %p")
-        # tabs.createEvent(msgParse)
+        try:
+            message = await websocket.recv()
+            msgParse = json.loads(message)
+            msgParse["recordedTime"] = datetime.strptime(msgParse["recordedTime"], "%m/%d/%Y, %H:%M:%S %p")
+            print(msgParse["recordedTime"])
+            # if msgParse["timeType"] == "end":
+            #     tabs.createEvent(msgParse)
+            # else:
+            #     tabs.logStartTime(msgParse["recordedTime"])
+
+        except websockets.ConnectionClosedOK:
+            break
+
 
 async def webServer():
     async with websockets.serve(messageHandler, "localhost", 3000):
@@ -117,5 +131,4 @@ async def webServer():
 
 if __name__ == '__main__':
     tabs = Tabs2Calendar("googleCalendar.json")
-    # tabs.createEvent(None)
     asyncio.run(webServer())

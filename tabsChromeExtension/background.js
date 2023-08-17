@@ -10,6 +10,13 @@ var message = {
 
 console.log("Background code running...")
 
+// if the server disconnects
+socket.onclose = function (event) {
+    // Connection closed.
+    socket.close();
+    console.log("Websocket disconnected");
+}
+
 // for when you go to new tab different from current tab
 chrome.tabs.onActivated.addListener(function (activeInfo)
 {
@@ -37,8 +44,17 @@ chrome.tabs.onActivated.addListener(function (activeInfo)
                 previousUrl = newUrl;
                 console.log("URL changed to " + previousUrl);
             }
-            socket.send(JSON.stringify(message));
-            console.log("URL sent from onActivated()");
+
+            if (socket.readyState !== WebSocket.CLOSED)
+            {
+                socket.send(JSON.stringify(message));
+                console.log("URL sent from onActivated()");
+            }
+            else
+            {
+                console.log("Unable to send URL. Websocket Currently Closed");
+            }
+
         }
     });
 });
@@ -67,7 +83,15 @@ chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
             previousUrl = newUrl;
             console.log("URL changed to " + previousUrl);
         }
-        socket.send(JSON.stringify(message));
-        console.log("URL sent from onUpdate()");
+
+        if (socket.readyState !== WebSocket.CLOSED)
+        {
+            socket.send(JSON.stringify(message));
+            console.log("URL sent from onUpdate()");
+        }
+        else
+        {
+            console.log("Unable to send URL. Websocket Currently Closed");
+        }
     }
 });
