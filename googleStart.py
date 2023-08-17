@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-import datetime
+from datetime import datetime
 import os.path
 import json
 import asyncio
@@ -17,9 +17,9 @@ SCOPES = ['https://www.googleapis.com/auth/calendar']
 
 class Tabs2Calendar():
     def __init__(self, googleCalendar):
-        self.creds = None
-        self.service = None
-        self.CALENDAR_ID = None
+        self.creds = None # credential authorization
+        self.service = None # object that manipulates google calendar API
+        self.CALENDAR_ID = None # ID url of google calendar
 
         # get google calendar id/url
         if googleCalendar.lower().endswith('.json'):
@@ -59,9 +59,10 @@ class Tabs2Calendar():
             print('An error occurred: %s' % error)
 
     def printEvents(self):
+        # confirms google api is connected
         if self.service:
             # call the Google Calendar API
-            currentTime = datetime.datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
+            currentTime = datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
             print('Getting the upcoming 10 events')
             events_result = self.service.events().list(calendarId=self.CALENDAR_ID,
                                                   timeMin=currentTime,
@@ -81,22 +82,23 @@ class Tabs2Calendar():
             print("Authentication Error")
 
 
-    def createEvent(self, websiteName, startTime, endTime):
+    def createEvent(self, message):
+        # confirms google api is connected
         if self.service:
             event = {
                 'summary': 'Replace with websiteName',
                 # 'location': '510 East Peltason Drive',
-                'description': 'Can maybe put specific website url',
+                # 'description': 'Can maybe put specific website url',
                 'start': {
-                    'dateTime': '2023-08-09T09:00:00', # replace with startTime
+                    'dateTime': '2023-08-09T09:00:00', # replace with startTime "8/16/2023, 7:00:00 PM",
                     'timeZone': 'America/Los_Angeles',
                 },
                 'end': {
-                    'dateTime': '2023-08-09T17:00:00', # replace with endTime
+                    'dateTime': '2023-08-09T17:00:00', # replace with endTime "8/16/2023, 10:00:00 PM",
                     'timeZone': 'America/Los_Angeles',
                 },
             }
-            event = self.service.events().insert(calendarId=self.CALENDAR_ID, body=event).execute()
+            self.service.events().insert(calendarId=self.CALENDAR_ID, body=event).execute()
             print("Event Added!")
 
         else:
@@ -105,14 +107,15 @@ class Tabs2Calendar():
 async def messageHandler(websocket):
     while True:
         message = await websocket.recv()
-        print(message)
+        msgParse = json.loads(message)
+        dateObject = datetime.strptime(msgParse["recordedTime"], "%m/%d/%Y, %H:%M:%S %p")
+        # tabs.createEvent(msgParse)
 
 async def webServer():
     async with websockets.serve(messageHandler, "localhost", 3000):
         await asyncio.Future()  # run forever
 
 if __name__ == '__main__':
-    test = Tabs2Calendar("googleCalendar.json")
+    tabs = Tabs2Calendar("googleCalendar.json")
+    # tabs.createEvent(None)
     asyncio.run(webServer())
-    # test.printEvents()
-    # test.createEvent()
