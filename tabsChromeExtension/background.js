@@ -45,16 +45,7 @@ chrome.tabs.onActivated.addListener(function (activeInfo)
                 console.log("URL changed to " + previousUrl);
             }
 
-            if (socket.readyState !== WebSocket.CLOSED)
-            {
-                socket.send(JSON.stringify(message));
-                console.log("URL sent from onActivated()");
-            }
-            else
-            {
-                console.log("Unable to send URL. Websocket Currently Closed");
-            }
-
+            sendData()
         }
     });
 });
@@ -84,14 +75,19 @@ chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
             console.log("URL changed to " + previousUrl);
         }
 
-        if (socket.readyState !== WebSocket.CLOSED)
-        {
-            socket.send(JSON.stringify(message));
-            console.log("URL sent from onUpdate()");
-        }
-        else
-        {
-            console.log("Unable to send URL. Websocket Currently Closed");
-        }
+        sendData();
     }
 });
+
+function sendData()
+{
+    if (socket.readyState !== WebSocket.CLOSED)
+    {
+        socket.send(JSON.stringify(message));
+        console.log("URL sent!");
+    }
+    else
+    {
+        console.log("Unable to send URL. Websocket Currently Closed");
+    }
+}
