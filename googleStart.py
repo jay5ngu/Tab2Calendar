@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import os.path
 import json
 import asyncio
@@ -21,6 +21,8 @@ class Tabs2Calendar():
         self.creds = None # credential authorization
         self.service = None # object that manipulates google calendar API
         self.CALENDAR_ID = None # ID url of google calendar
+        self.urlHistory = {} # a dict that records all urls traveled to
+        self.currentUrl = None # current url we're on
         self.startTime = None # start time for google calendar event
 
         # get google calendar id/url
@@ -60,53 +62,45 @@ class Tabs2Calendar():
             self.service = None
             print('An error occurred: %s' % error)
 
-    def printEvents(self):
-        # confirms google api is connected
-        if self.service:
-            # call the Google Calendar API
-            currentTime = datetime.utcnow().isoformat() + 'Z'  # 'Z' indicates UTC time
-            print('Getting the upcoming 10 events')
-            events_result = self.service.events().list(calendarId=self.CALENDAR_ID,
-                                                  timeMin=currentTime,
-                                                  maxResults=10, singleEvents=True,
-                                                  orderBy='startTime').execute()
-            events = events_result.get('items', [])
-
-            if not events:
-                print('No upcoming events found.')
-                return
-
-            # Prints the start and name of the next 10 events
-            for event in events:
-                start = event['start'].get('dateTime', event['start'].get('date'))
-                print(start, event['summary'])
-        else:
-            print("Authentication Error")
+    def logCurrentUrl(self, message):
+        self.currentUrl = message["url"]
 
     def logStartTime(self, startTime):
         self.startTime = startTime
 
-    def createEvent(self, message):
-        # confirms google api is connected
-        if self.service:
-            event = {
-                'summary': message["url"], # 'Replace with websiteName',
-                # 'location': '510 East Peltason Drive',
-                # 'description': 'Can maybe put specific website url',
-                'start': {
-                    'dateTime': self.startTime, # '2023-08-09T09:00:00',
-                    'timeZone': 'America/Los_Angeles',
-                },
-                'end': {
-                    'dateTime': message["recordedTime"], # replace with endTime "8/16/2023, 10:00:00 PM",
-                    'timeZone': 'America/Los_Angeles',
-                },
-            }
-            self.service.events().insert(calendarId=self.CALENDAR_ID, body=event).execute()
-            print("Event Added!")
+    def createEvent(self, endTime):
+        timeDifference = endTime - self.startTime
+        if timeDifference >= timedelta(seconds=0, minutes=5):
+            # confirms google api is connected
+            # if self.service:
+            #     event = {
+            #         'summary': self.currentUrl, # 'Replace with websiteName',
+            #         # 'location': '510 East Peltason Drive',
+            #         # 'description': 'Can maybe put specific website url',
+            #         'start': {
+            #             'dateTime': self.startTime, # '2023-08-09T09:00:00',
+            #             'timeZone': 'America/Los_Angeles',
+            #         },
+            #         'end': {
+            #             'dateTime': endTime, # replace with endTime "8/16/2023, 10:00:00 PM",
+            #             'timeZone': 'America/Los_Angeles',
+            #         },
+            #     }
+            #     self.service.events().insert(calendarId=self.CALENDAR_ID, body=event).execute()
+                print(f"{self.currentUrl} ended at {endTime}")
+                print("Event Added!")
 
+            # else:
+            #     print("Authentication Error")
+
+
+    def recordUrlHistory(self, message, endTime):
+        timeDifference = endTime - self.startTime
+        if message["url"] not in self.urlHistory:
+            self.urlHistory[message["url"]] = timeDifference
         else:
-            print("Authentication Error")
+            self.urlHistory[message["url"]] += timeDifference
+        print(f"Total time for {message['url']}: {self.urlHistory[message['url']]}")
 
 
 async def messageHandler(websocket):
@@ -114,12 +108,14 @@ async def messageHandler(websocket):
         try:
             message = await websocket.recv()
             msgParse = json.loads(message)
-            msgParse["recordedTime"] = datetime.strptime(msgParse["recordedTime"], "%m/%d/%Y, %H:%M:%S %p")
-            print(msgParse["recordedTime"])
-            # if msgParse["timeType"] == "end":
-            #     tabs.createEvent(msgParse)
-            # else:
-            #     tabs.logStartTime(msgParse["recordedTime"])
+            recordedTime = datetime.strptime(msgParse["recordedTime"], "%m/%d/%Y, %H:%M:%S %p")
+            if msgParse["timeType"] == "end":
+                tabs.createEvent(recordedTime)
+                tabs.recordUrlHistory(msgParse, recordedTime)
+
+            tabs.logCurrentUrl(msgParse)
+            tabs.logStartTime(recordedTime)
+            print(f"Current Url: {msgParse['url']} at {recordedTime}")
 
         except websockets.ConnectionClosedOK:
             break

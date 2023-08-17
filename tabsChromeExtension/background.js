@@ -43,9 +43,12 @@ chrome.tabs.onActivated.addListener(function (activeInfo)
                 message["timeType"] = "end";
                 previousUrl = newUrl;
                 console.log("URL changed to " + previousUrl);
+                sendData()
             }
-
-            sendData()
+            else
+            {
+                console.log("Same URL. No data will be sent.");
+            }
         }
     });
 });
@@ -73,6 +76,11 @@ chrome.tabs.onUpdated.addListener((tabId, change, tab) => {
             message["timeType"] = "end";
             previousUrl = newUrl;
             console.log("URL changed to " + previousUrl);
+            sendData()
+        }
+        else
+        {
+            console.log("Same URL. No data will be sent.");
         }
 
         sendData();
