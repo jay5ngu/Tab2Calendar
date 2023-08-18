@@ -58,6 +58,7 @@ class Tabs2Calendar():
 
         try:
             self.service = build('calendar', 'v3', credentials=self.creds)
+            print("Service Built")
         except HttpError as error:
             self.service = None
             print('An error occurred: %s' % error)
@@ -68,31 +69,41 @@ class Tabs2Calendar():
     def logStartTime(self, startTime):
         self.startTime = startTime
 
+    def convertDate(self, recordedTime):
+        newDate = datetime.strptime(recordedTime, "%m/%d/%Y, %H:%M:%S %p")
+        if "PM" in recordedTime:
+            if newDate.hour != 12:
+                newDate += timedelta(hours=12)
+        else:
+            if newDate.hour == 12:
+                newDate = newDate.replace(hour=0)
+        return newDate
+
+
     def createEvent(self, endTime):
         timeDifference = endTime - self.startTime
         print(timeDifference)
-        if timeDifference >= timedelta(seconds=0, minutes=5):
+        if timeDifference >= timedelta(minutes=5):
             # confirms google api is connected
-            # if self.service:
-            #     event = {
-            #         'summary': self.currentUrl, # 'Replace with websiteName',
-            #         # 'location': '510 East Peltason Drive',
-            #         # 'description': 'Can maybe put specific website url',
-            #         'start': {
-            #             'dateTime': self.startTime, # '2023-08-09T09:00:00',
-            #             'timeZone': 'America/Los_Angeles',
-            #         },
-            #         'end': {
-            #             'dateTime': endTime, # replace with endTime "8/16/2023, 10:00:00 PM",
-            #             'timeZone': 'America/Los_Angeles',
-            #         },
-            #     }
-            #     self.service.events().insert(calendarId=self.CALENDAR_ID, body=event).execute()
+            if self.service:
+                event = {
+                    'summary': self.currentUrl,  # 'Replace with websiteName',
+                    # 'description': 'Can maybe put specific website url',
+                    'start': {
+                        'dateTime': self.startTime.strftime("%Y-%m-%dT%H:%M:%S"),  # '2023-08-09T09:00:00',
+                        'timeZone': 'America/Los_Angeles',
+                    },
+                    'end': {
+                        'dateTime': endTime.strftime("%Y-%m-%dT%H:%M:%S"),
+                        'timeZone': 'America/Los_Angeles',
+                    },
+                }
+                self.service.events().insert(calendarId=self.CALENDAR_ID, body=event).execute()
                 print(f"{self.currentUrl} ended at {endTime}")
                 print("Event Added!")
 
-            # else:
-            #     print("Authentication Error")
+            else:
+                print("Authentication Error")
 
 
     def recordUrlHistory(self, endTime):
@@ -101,7 +112,7 @@ class Tabs2Calendar():
             self.urlHistory[self.currentUrl] = timeDifference
         else:
             self.urlHistory[self.currentUrl] += timeDifference
-        print(f"Total time for {self.currentUrl}: {self.urlHistory[self.currentUrl]}")
+        # print(f"Total time for {self.currentUrl}: {self.urlHistory[self.currentUrl]}")
 
 
 async def messageHandler(websocket):
@@ -109,8 +120,8 @@ async def messageHandler(websocket):
         try:
             message = await websocket.recv()
             msgParse = json.loads(message)
-            recordedTime = datetime.strptime(msgParse["recordedTime"], "%m/%d/%Y, %H:%M:%S %p")
-            print(recordedTime)
+            recordedTime = tabs.convertDate(msgParse["recordedTime"])
+
             if msgParse["timeType"] == "end":
                 tabs.createEvent(recordedTime)
                 tabs.recordUrlHistory(recordedTime)
@@ -118,7 +129,6 @@ async def messageHandler(websocket):
             tabs.logCurrentUrl(msgParse)
             tabs.logStartTime(recordedTime)
             print(f"Current Url: {msgParse['url']} at {recordedTime}")
-
         except websockets.ConnectionClosedOK:
             break
 
@@ -126,6 +136,7 @@ async def messageHandler(websocket):
 async def webServer():
     async with websockets.serve(messageHandler, "localhost", 3000):
         await asyncio.Future()  # run forever
+
 
 if __name__ == '__main__':
     tabs = Tabs2Calendar("googleCalendar.json")
